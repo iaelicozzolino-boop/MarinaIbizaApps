@@ -7,7 +7,7 @@
 <meta name="theme-color" content="#FFFFFF">
 <link rel="manifest" href="manifest.json">
 <link rel="icon" href="icon-192.png">
-<link rel="apple-touch-icon" href="icon-192.png">
+<link rel="apple-touch-icon" sizes="180x180" href="apple-touch-icon.png">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-title" content="MI Apps">
 <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@500;600;700&display=swap" rel="stylesheet">
@@ -105,7 +105,7 @@
   <main id="list"></main>
   <div class="install" id="install" hidden>
     <img src="icon-192.png" alt="">
-    <div>Instalar en el móvil<small>Acceso directo a pantalla completa</small></div>
+    <div id="installText">Instalar en el móvil<small>Acceso directo a pantalla completa</small></div>
     <button class="btn navy" id="installBtn">Instalar</button>
   </div>
   <div class="adminbar" id="adminbar" hidden>
@@ -296,9 +296,17 @@ window.addEventListener("popstate", e => { if (e.state && e.state.app != null) o
 history.replaceState(null, "", location.pathname + location.search);
 
 let deferred;
-window.addEventListener("beforeinstallprompt", e => { e.preventDefault(); deferred = e; $("#install").hidden = false; });
+const isStandalone = window.navigator.standalone === true || window.matchMedia("(display-mode: standalone)").matches;
+const isIOS = /iPhone|iPad|iPod/.test(navigator.userAgent) || (navigator.platform === "MacIntel" && navigator.maxTouchPoints > 1);
+if (isIOS && !isStandalone) {
+  // iOS no lanza beforeinstallprompt: la instalación es manual desde Safari.
+  $("#install").hidden = false;
+  $("#installBtn").hidden = true;
+  $("#installText").innerHTML = 'Instalar en iPhone<small>En Safari, pulsa Compartir y luego «Añadir a pantalla de inicio»</small>';
+}
+window.addEventListener("beforeinstallprompt", e => { e.preventDefault(); deferred = e; if (!isStandalone) $("#install").hidden = false; });
 $("#installBtn").onclick = async () => { if (!deferred) return; deferred.prompt(); await deferred.userChoice; deferred = null; $("#install").hidden = true; };
-if ("serviceWorker" in navigator && location.protocol === "https:") navigator.serviceWorker.register("sw.js");
+if ("serviceWorker" in navigator && location.protocol === "https:") navigator.serviceWorker.register("sw.js").catch(() => {});
 </script>
 </body>
 </html>
