@@ -20,9 +20,6 @@
   header { position:relative; display:flex; flex-direction:column; align-items:center; gap:6px; padding:28px 0 8px; }
   header img { width:min(220px,60vw); height:auto; display:block; }
   .kicker { font-size:12px; font-weight:600; letter-spacing:.18em; color:var(--dim); }
-  .gear { position:absolute; top:0; right:-8px; width:44px; height:44px; border:0; background:none; border-radius:12px; display:flex; align-items:center; justify-content:center; color:var(--dim); cursor:pointer; }
-  .gear:hover { background:var(--soft); color:var(--navy); }
-  .gear.on { color:var(--navy); background:#E8EEF6; }
   .dept { margin-top:30px; }
   .dept-h { display:flex; align-items:center; gap:10px; margin-bottom:14px; }
   .dot { width:10px; height:10px; border-radius:3px; flex:none; }
@@ -39,9 +36,6 @@
   .add .lbl { color:var(--dim); }
   .edit-badge { position:absolute; top:-2px; right:calc(50% - 40px); width:22px; height:22px; border-radius:50%; background:#fff; border:1px solid var(--line); display:flex; align-items:center; justify-content:center; color:var(--navy); box-shadow:0 1px 3px rgba(0,0,0,.12); }
   .empty { font-size:13px; color:var(--dim); padding:4px 0; }
-  .adminbar { position:sticky; bottom:calc(env(safe-area-inset-bottom) + 12px); margin-top:36px; display:flex; flex-wrap:wrap; gap:8px; background:var(--navy); color:#fff; padding:10px; border-radius:18px; box-shadow:0 10px 30px rgba(20,24,31,.2); align-items:center; }
-  .adminbar span { flex:1 1 100%; font-size:12px; font-weight:600; opacity:.8; padding:2px 6px 4px; }
-  @media (min-width:640px) { .adminbar span { flex:1 1 auto; } }
   .btn { height:44px; padding:0 16px; border-radius:12px; border:0; font:700 14px Manrope,system-ui,sans-serif; cursor:pointer; display:inline-flex; align-items:center; justify-content:center; gap:6px; }
   .btn.light { background:rgba(255,255,255,.14); color:#fff; }
   .btn.white { background:#fff; color:var(--navy); }
@@ -98,21 +92,12 @@
   <header>
     <img src="logo.webp" alt="Marina Ibiza">
     <span class="kicker">APPS DEL PUERTO</span>
-    <button class="gear" id="gear" aria-label="Administrar">
-      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 1 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 1 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 1 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 1 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
-    </button>
   </header>
   <main id="list"></main>
   <div class="install" id="install" hidden>
     <img src="icon-192.png" alt="">
     <div id="installText">Instalar en el móvil<small>Acceso directo a pantalla completa</small></div>
     <button class="btn navy" id="installBtn">Instalar</button>
-  </div>
-  <div class="adminbar" id="adminbar" hidden>
-    <span>Modo administrador · los cambios se guardan solo en este dispositivo hasta que los pegues en el código</span>
-    <button class="btn light" id="newDept">+ Departamento</button>
-    <button class="btn white" id="export">Exportar lista</button>
-    <button class="btn light" id="exitAdmin">Salir</button>
   </div>
 </div>
 <div id="modal"></div>
@@ -137,109 +122,25 @@ const APPS = [
 ];
 // ===== FIN LISTA =====
 
-const COLORS = ["#1F3A68", "#3E6FA8", "#5B86B8", "#2A4E7F", "#7C9CC4", "#163055"];
-const KEY = "mi-apps-draft";
-let draft = JSON.parse(localStorage.getItem(KEY) || "null");
-let data = draft || { depts: DEPTS, apps: APPS };
-let admin = false;
+const data = { depts: DEPTS, apps: APPS };
 
 const $ = s => document.querySelector(s);
 const esc = s => String(s).replace(/[&<>"]/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
 const mono = n => { const w = n.trim().split(/\s+/).filter(Boolean); return ((w[0]||"")[0] + ((w[1]||w[0]||"")[w[1] ? 0 : 1] || "")).toUpperCase(); };
-const save = () => { localStorage.setItem(KEY, JSON.stringify(data)); draft = data; };
 const toast = m => { const t = document.createElement("div"); t.className = "toast"; t.textContent = m; document.body.appendChild(t); setTimeout(() => t.remove(), 2200); };
-const pen = '<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M12 20h9M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4Z"/></svg>';
 
 function render() {
-  $("#gear").classList.toggle("on", admin);
-  $("#adminbar").hidden = !admin;
-  $("#list").innerHTML = data.depts.map((d, di) => {
+  $("#list").innerHTML = data.depts.map(d => {
     const apps = data.apps.map((a, i) => ({ ...a, i })).filter(a => a.dept === d.name);
-    if (!apps.length && !admin) return "";
-    const tiles = apps.map(a => admin
-      ? `<button class="app" data-edit="${a.i}"><div class="ico" style="background:${d.color}">${esc(mono(a.name))}</div><span class="edit-badge">${pen}</span><span class="lbl">${esc(a.name)}</span></button>`
-      : `<button class="app" data-open="${a.i}"><div class="ico" style="background:${d.color}">${esc(mono(a.name))}</div><span class="lbl">${esc(a.name)}</span></button>`).join("");
-    const add = admin ? `<button class="app add" data-add="${di}"><div class="ico">+</div><span class="lbl">Añadir</span></button>` : "";
-    const head = admin ? `<button data-dept="${di}" style="border:0;background:none;padding:0;display:flex;align-items:center;gap:6px;cursor:pointer;color:var(--navy)">${pen}</button>` : "";
-    return `<section class="dept"><div class="dept-h"><span class="dot" style="background:${d.color}"></span><span class="dept-name">${esc(d.name)}</span>${head}<span class="rule"></span></div><div class="grid">${tiles}${add}</div></section>`;
+    if (!apps.length) return "";
+    const tiles = apps.map(a => `<button class="app" data-open="${a.i}"><div class="ico" style="background:${d.color}">${esc(mono(a.name))}</div><span class="lbl">${esc(a.name)}</span></button>`).join("");
+    return `<section class="dept"><div class="dept-h"><span class="dot" style="background:${d.color}"></span><span class="dept-name">${esc(d.name)}</span><span class="rule"></span></div><div class="grid">${tiles}</div></section>`;
   }).join("");
 }
 
-function sheet(html, onMount) {
-  $("#modal").innerHTML = `<div class="scrim"><div class="sheet"><div class="grab"></div>${html}</div></div>`;
-  const scrim = $("#modal .scrim");
-  scrim.addEventListener("click", e => { if (e.target === scrim) close(); });
-  onMount && onMount($("#modal .sheet"));
-}
-const close = () => { $("#modal").innerHTML = ""; };
-
-function editApp(i, deptIdx) {
-  const isNew = i == null;
-  const a = isNew ? { name: "", url: "", dept: data.depts[deptIdx].name } : data.apps[i];
-  sheet(`<h2>${isNew ? "Nueva app" : "Editar app"}</h2>
-    <label>NOMBRE<input id="fName" value="${esc(a.name)}" placeholder="p.ej. Partes de trabajo"></label>
-    <label>ENLACE<input id="fUrl" value="${esc(a.url)}" placeholder="https://…" inputmode="url"></label>
-    <label>DEPARTAMENTO<select id="fDept">${data.depts.map(d => `<option ${d.name === a.dept ? "selected" : ""}>${esc(d.name)}</option>`).join("")}</select></label>
-    <div class="row">${isNew ? "" : '<button class="btn danger" id="del">Borrar</button>'}<button class="btn ghost" id="cancel">Cancelar</button><button class="btn navy" id="ok">Guardar</button></div>`, s => {
-    s.querySelector("#cancel").onclick = close;
-    if (!isNew) s.querySelector("#del").onclick = () => { if (confirm(`¿Borrar «${a.name}»?`)) { data.apps.splice(i, 1); save(); close(); render(); toast("App borrada"); } };
-    s.querySelector("#ok").onclick = () => {
-      const name = s.querySelector("#fName").value.trim(), url = s.querySelector("#fUrl").value.trim(), dept = s.querySelector("#fDept").value;
-      if (!name || !/^https?:\/\//.test(url)) { toast("Falta el nombre o el enlace (https://…)"); return; }
-      const v = { name, dept, url };
-      if (isNew) data.apps.push(v); else data.apps[i] = v;
-      save(); close(); render(); toast(isNew ? "App añadida" : "Cambios guardados");
-    };
-    if (isNew) setTimeout(() => s.querySelector("#fName").focus(), 50);
-  });
-}
-
-function editDept(di) {
-  const isNew = di == null;
-  const d = isNew ? { name: "", color: COLORS[data.depts.length % COLORS.length] } : data.depts[di];
-  let color = d.color;
-  const count = isNew ? 0 : data.apps.filter(a => a.dept === d.name).length;
-  sheet(`<h2>${isNew ? "Nuevo departamento" : "Departamento"}</h2>
-    <label>NOMBRE<input id="dName" value="${esc(d.name)}" placeholder="p.ej. Mantenimiento"></label>
-    <label>COLOR<div class="swatches">${COLORS.map(c => `<button data-c="${c}" class="${c === color ? "on" : ""}" style="background:${c}"></button>`).join("")}</div></label>
-    ${!isNew && count ? `<p>Tiene ${count} app${count > 1 ? "s" : ""}. Para borrarlo, primero muévelas a otro departamento.</p>` : ""}
-    <div class="row">${!isNew && !count ? '<button class="btn danger" id="del">Borrar</button>' : ""}<button class="btn ghost" id="cancel">Cancelar</button><button class="btn navy" id="ok">Guardar</button></div>`, s => {
-    s.querySelectorAll("[data-c]").forEach(b => b.onclick = e => { e.preventDefault(); color = b.dataset.c; s.querySelectorAll("[data-c]").forEach(x => x.classList.toggle("on", x === b)); });
-    s.querySelector("#cancel").onclick = close;
-    const del = s.querySelector("#del"); if (del) del.onclick = () => { data.depts.splice(di, 1); save(); close(); render(); };
-    s.querySelector("#ok").onclick = () => {
-      const name = s.querySelector("#dName").value.trim();
-      if (!name) { toast("Escribe un nombre"); return; }
-      if (data.depts.some((x, j) => x.name.toLowerCase() === name.toLowerCase() && j !== di)) { toast("Ese departamento ya existe"); return; }
-      if (isNew) data.depts.push({ name, color });
-      else { data.apps.forEach(a => { if (a.dept === d.name) a.dept = name; }); data.depts[di] = { name, color }; }
-      save(); close(); render();
-    };
-    if (isNew) setTimeout(() => s.querySelector("#dName").focus(), 50);
-  });
-}
-
-function exportCode() {
-  const pad = Math.max(...data.apps.map(a => JSON.stringify(a.name).length)) + 1;
-  const code = `const DEPTS = [\n${data.depts.map(d => `  { name: ${JSON.stringify(d.name)}, color: "${d.color}" }`).join(",\n")}\n];\nconst APPS = [\n${data.apps.map(a => `  { name: ${(JSON.stringify(a.name) + ",").padEnd(pad + 1)} dept: ${JSON.stringify(a.dept)}, url: ${JSON.stringify(a.url)} }`).join(",\n")}\n];`;
-  sheet(`<h2>Exportar lista</h2><p>Copia este código y pégalo en <b>index.html</b>, sustituyendo lo que hay entre «LISTA DE APPS» y «FIN LISTA». Al subirlo a GitHub, todos verán los cambios.</p>
-    <textarea readonly id="code">${esc(code)}</textarea>
-    <div class="row"><button class="btn ghost" id="reset">Descartar cambios</button><button class="btn navy" id="copy">Copiar</button></div>`, s => {
-    s.querySelector("#copy").onclick = async () => { try { await navigator.clipboard.writeText(code); } catch { s.querySelector("#code").select(); document.execCommand("copy"); } toast("Código copiado"); };
-    s.querySelector("#reset").onclick = () => { if (confirm("¿Volver a la lista publicada?")) { localStorage.removeItem(KEY); draft = null; data = { depts: DEPTS, apps: APPS }; close(); render(); } };
-  });
-}
-
-$("#gear").onclick = () => { admin = !admin; if (admin) toast("Modo administrador activado"); render(); };
-$("#exitAdmin").onclick = () => { admin = false; render(); };
-$("#newDept").onclick = () => editDept(null);
-$("#export").onclick = exportCode;
 $("#list").addEventListener("click", e => {
-  const t = e.target.closest("[data-open],[data-edit],[data-add],[data-dept]"); if (!t) return;
-  if (t.dataset.open != null) openApp(+t.dataset.open);
-  else if (t.dataset.edit != null) editApp(+t.dataset.edit);
-  else if (t.dataset.add != null) editApp(null, +t.dataset.add);
-  else editDept(+t.dataset.dept);
+  const t = e.target.closest("[data-open]"); if (!t) return;
+  openApp(+t.dataset.open);
 });
 render();
 
